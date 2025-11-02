@@ -1,0 +1,221 @@
+local DrRayLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/AZYsGithub/DrRay-UI-Library/main/DrRay.lua"))()
+local window = DrRayLibrary:Load("BLAIR | JiwooHUB", "Default")
+
+local tab1 = DrRayLibrary.newTab("Main")
+
+-- Create the highlight effect
+local function createHighlight(part, fillColor, outlineColor, outlineTransparency)
+    local highlight = Instance.new("Highlight")
+    highlight.Parent = part
+    highlight.Adornee = part
+    highlight.FillColor = fillColor
+    highlight.OutlineColor = outlineColor
+    highlight.OutlineTransparency = outlineTransparency
+    return highlight
+end
+
+-- Add a label above the Ghost
+local function addGhostLabel(ghost)
+    if ghost:FindFirstChild("HumanoidRootPart") then
+        local billboardGui = Instance.new("BillboardGui")
+        billboardGui.Adornee = ghost.HumanoidRootPart
+        billboardGui.Size = UDim2.new(6, 0, 2, 0)
+        billboardGui.StudsOffset = Vector3.new(0, 5, 0)
+        billboardGui.AlwaysOnTop = true
+        
+        local textLabel = Instance.new("TextLabel")
+        textLabel.Parent = billboardGui
+        textLabel.Size = UDim2.new(1, 0, 1, 0)
+        textLabel.BackgroundTransparency = 1
+        textLabel.Text = "Ghost"
+        textLabel.TextColor3 = Color3.new(1, 1, 1)
+        textLabel.TextStrokeTransparency = 0.5
+        textLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+        textLabel.Font = Enum.Font.SourceSansBold
+        textLabel.TextSize = 58
+        textLabel.TextScaled = true
+
+        billboardGui.Parent = ghost.HumanoidRootPart
+    end
+end
+
+-- Toggle for handling labels
+local ghostLabelConnection
+
+local function toggleGhostLabels(enabled)
+    if enabled then
+        -- Create new connection to add labels
+        ghostLabelConnection = workspace.ChildAdded:Connect(function(child)
+            if child.Name == "Ghost" and child:IsA("Model") then
+                child:WaitForChild("HumanoidRootPart")
+                addGhostLabel(child)
+            end
+        end)
+
+        -- Handle any existing Ghosts in the workspace at the time the script runs
+        for _, child in pairs(workspace:GetChildren()) do
+            if child.Name == "Ghost" and child:IsA("Model") then
+                addGhostLabel(child)
+            end
+        end
+    else
+        -- Remove existing ghost labels
+        for _, child in pairs(workspace:GetChildren()) do
+            if child.Name == "Ghost" and child:IsA("Model") then
+                local humanoidRootPart = child:FindFirstChild("HumanoidRootPart")
+                if humanoidRootPart then
+                    local billboardGui = humanoidRootPart:FindFirstChildOfClass("BillboardGui")
+                    if billboardGui then
+                        billboardGui:Destroy()
+                    end
+                end
+            end
+        end
+
+        -- Disconnect the event to prevent further label additions
+        if ghostLabelConnection then
+            ghostLabelConnection:Disconnect()
+            ghostLabelConnection = nil
+        end
+    end
+end
+
+-- Handle Ghost highlights
+local function handleGhost(ghost)
+    createHighlight(ghost, Color3.fromRGB(255, 165, 0), Color3.fromRGB(255, 255, 255), 0.1)
+    if ghostLabelToggle then
+        addGhostLabel(ghost)
+    end
+end
+
+-- Toggle function to enable/disable ghost highlighting
+local function toggleGhosts(enabled)
+    if enabled then
+        workspace.ChildAdded:Connect(function(child)
+            if child.Name == "Ghost" and child:IsA("Model") then
+                child:WaitForChild("HumanoidRootPart")
+                handleGhost(child)
+            end
+        end)
+
+        for _, child in pairs(workspace:GetChildren()) do
+            if child.Name == "Ghost" and child:IsA("Model") then
+                handleGhost(child)
+            end
+        end
+    else
+        for _, child in pairs(workspace:GetChildren()) do
+            if child.Name == "Ghost" and child:IsA("Model") then
+                local highlight = child:FindFirstChildOfClass("Highlight")
+                if highlight then
+                    highlight:Destroy()
+                end
+                
+                local humanoidRootPart = child:FindFirstChild("HumanoidRootPart")
+                if humanoidRootPart then
+                    local billboardGui = humanoidRootPart:FindFirstChildOfClass("BillboardGui")
+                    if billboardGui then
+                        billboardGui:Destroy()
+                    end
+                end
+            end
+        end
+    end
+end
+
+-- Highlight player characters (Team feature)
+local function highlightPlayer(player)
+    local localPlayer = game.Players.LocalPlayer
+    if player.Character and player ~= localPlayer then
+        local highlight = Instance.new("Highlight")
+        highlight.FillColor = Color3.new(1, 1, 1)
+        highlight.OutlineColor = Color3.new(0, 0, 0)
+        highlight.OutlineTransparency = 0.9
+        highlight.Parent = player.Character
+    end
+end
+
+local function onPlayerAdded(player)
+    highlightPlayer(player)
+    
+    player.CharacterAdded:Connect(function()
+        highlightPlayer(player)
+    end)
+end
+
+local function toggleTeamHighlight(enabled)
+    if enabled then
+        for _, player in pairs(game.Players:GetPlayers()) do
+            onPlayerAdded(player)
+        end
+
+        game.Players.PlayerAdded:Connect(onPlayerAdded)
+    else
+        for _, player in pairs(game.Players:GetPlayers()) do
+            if player.Character then
+                local highlight = player.Character:FindFirstChildOfClass("Highlight")
+                if highlight then
+                    highlight:Destroy()
+                end
+            end
+        end
+    end
+end
+
+-- Toggle function for highlighting cursed objects
+local function toggleCursedObjects(enabled)
+    if enabled then
+        local ouijaBoardPart = workspace:FindFirstChild("Ouija Board")
+        if ouijaBoardPart then
+            createHighlight(ouijaBoardPart, Color3.fromRGB(238, 130, 238), Color3.fromRGB(255, 255, 255), 0.3)
+        end
+
+        local tarotCardsPart = workspace.Map.Items:FindFirstChild("Tarot Cards")
+        if tarotCardsPart then
+            createHighlight(tarotCardsPart, Color3.fromRGB(148, 0, 211), Color3.fromRGB(255, 255, 255), 0.5)
+        end
+
+        local function highlightPath(path)
+            for _, part in ipairs(path:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    createHighlight(part, Color3.fromRGB(148, 0, 211), Color3.fromRGB(255, 255, 255), 0.5)
+                end
+            end
+        end
+
+        local summoningCirclePath = workspace:WaitForChild("SummoningCircle")
+        highlightPath(summoningCirclePath)
+    else
+        local function removeHighlightsFromObjects(parent)
+            for _, child in pairs(parent:GetChildren()) do
+                if child:IsA("Highlight") then
+                    child:Destroy()
+                elseif child:IsA("Model") then
+                    removeHighlightsFromObjects(child)
+                end
+            end
+        end
+
+        removeHighlightsFromObjects(workspace)
+    end
+end
+
+-- Maintain toggle state
+local ghostLabelToggle = false
+
+tab1.newToggle("Ghost", "Highlight the ghost!", false, function(toggleState)
+    toggleGhosts(toggleState)
+end)
+
+tab1.newToggle("Ghost Label", "Add or remove labels above the ghost models!", false, function(toggleState)
+    ghostLabelToggle = toggleState
+    toggleGhostLabels(toggleState)
+end)
+
+tab1.newToggle("Team", "Highlight other players!", false, function(toggleState)
+    toggleTeamHighlight(toggleState)
+end)
+
+tab1.newToggle("Curse Objects", "Highlight cursed objects in the game!", false, function(toggleState)
+    toggleCursedObjects(toggleState)
+end)
